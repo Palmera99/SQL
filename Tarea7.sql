@@ -6,23 +6,54 @@ create or replace PACKAGE ACTIVIDAD_TIPOS_BLOQUES as
 end ACTIVIDAD_TIPOS_BLOQUES;
 
 CREATE OR REPLACE PACKAGE BODY ACTIVIDAD_TIPOS_BLOQUES AS
-
-    PROCEDURE MODIFICAR_TORRE(P_ID IN UNIDAD_INTERNA.ID_UNIDAD%TYPE, P_NUEVATORRE IN UNIDAD_INTERNA.NUM_TORRE%TYPE, 
-    PH_ID IN H_UNIDAD_INTERNA.ID_UNIDAD%TYPE, PH_NUEVATORRE IN H_UNIDAD_INTERNA.NUM_TORRE%TYPE  ) IS 
+    PROCEDURE modificar_torre (
+        p_id          IN unidad_interna.id_unidad%TYPE,
+        p_nuevatorre  IN unidad_interna.num_torre%TYPE,
+        ph_id         IN h_unidad_interna.id_unidad%TYPE,
+        ph_nuevatorre IN h_unidad_interna.num_torre%TYPE
+    ) IS
     BEGIN
-        UPDATE unidad_interna SET num_torre = p_nuevatorre WHERE id_unidad = P_ID;
-        UPDATE H_unidad_interna SET num_torre = pH_nuevatorre WHERE id_unidad = PH_ID;
+        UPDATE unidad_interna
+        SET
+            num_torre = p_nuevatorre
+        WHERE
+            id_unidad = p_id;
+
+        UPDATE h_unidad_interna
+        SET
+            num_torre = ph_nuevatorre
+        WHERE
+            id_unidad = ph_id;
+
         COMMIT;
     END;
+        
+ trigger tgr_unidad AFTER
+    INSERT OR UPDATE OR DELETE ON unidad_interna
+    FOR EACH ROW BEGIN
+    IF inserting THEN
+        dbms_output.put_line('Se ha insertado un registro en tabla_origen.');
+    ELSIF updating THEN
+        dbms_output.put_line('Se ha actualizado un registro en tabla_origen.');
+    ELSIF deleting THEN
+        dbms_output.put_line('Se ha eliminado un registro de tabla_origen.');
+    END IF;
+
+    INSERT INTO h_unidad_interna (
+        nombre_unidad,
+        descripcion_unidad,
+        num_torre,
+        fecha_modificacion
+    ) VALUES (
+        :new.nombre_unidad,
+        :new.descripcion_unidad,
+        :new.num_torre,
+        sysdate
+    );
+
+END tgr_unidad;
     
-    TRIGGER
-    
-    
-    
-    
-    
-    
-    
-END ACTIVIDAD_TIPOS_BLOQUES;
+ 
+END actividad_tipos_bloques;
 
 ALTER TABLE H_UNIDAD_INTERNA RENAME COLUMN COLUMN1 TO NOMBRE_UNIDAD;
