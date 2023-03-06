@@ -1,59 +1,43 @@
 set SERVEROUTPUT on;
 
-create or replace PACKAGE ACTIVIDAD_TIPOS_BLOQUES as
-    FUNCTION CONTAR_MODIFICACIONES RETURN NUMBER;
-    PROCEDURE MODIFICAR_TORRE;
-end ACTIVIDAD_TIPOS_BLOQUES;
+CREATE OR REPLACE PACKAGE package_nombre IS
+  PROCEDURE modificar_torre(p_id IN NUMBER, p_nuevo_valor IN VARCHAR2);
+  FUNCTION contar_modificaciones RETURN NUMBER;
+END package_nombre;
+/
 
-CREATE OR REPLACE PACKAGE BODY ACTIVIDAD_TIPOS_BLOQUES AS
-    PROCEDURE modificar_torre (
-        p_id          IN unidad_interna.id_unidad%TYPE,
-        p_nuevatorre  IN unidad_interna.num_torre%TYPE,
-        ph_id         IN h_unidad_interna.id_unidad%TYPE,
-        ph_nuevatorre IN h_unidad_interna.num_torre%TYPE
-    ) IS
-    BEGIN
-        UPDATE unidad_interna
-        SET
-            num_torre = p_nuevatorre
-        WHERE
-            id_unidad = p_id;
+CREATE OR REPLACE PACKAGE BODY package_nombre IS
+  
 
-        UPDATE h_unidad_interna
-        SET
-            num_torre = ph_nuevatorre
-        WHERE
-            id_unidad = ph_id;
 
-        COMMIT;
-    END;
-        
- trigger tgr_unidad AFTER
-    INSERT OR UPDATE OR DELETE ON unidad_interna
-    FOR EACH ROW BEGIN
-    IF inserting THEN
-        dbms_output.put_line('Se ha insertado un registro en tabla_origen.');
-    ELSIF updating THEN
-        dbms_output.put_line('Se ha actualizado un registro en tabla_origen.');
-    ELSIF deleting THEN
-        dbms_output.put_line('Se ha eliminado un registro de tabla_origen.');
-    END IF;
+  -- Función que cuenta las modificaciones en la tabla_origen
+  FUNCTION contar_modificaciones RETURN NUMBER IS
+    cantidad_modificaciones NUMBER := 0;
+  BEGIN
+    SELECT COUNT(*) INTO cantidad_modificaciones FROM tabla_origen;
+    RETURN cantidad_modificaciones;
+  END contar_modificaciones;
 
-    INSERT INTO h_unidad_interna (
-        nombre_unidad,
-        descripcion_unidad,
-        num_torre,
-        fecha_modificacion
-    ) VALUES (
-        :new.nombre_unidad,
-        :new.descripcion_unidad,
-        :new.num_torre,
-        sysdate
-    );
-
-END tgr_unidad;
-    
- 
-END actividad_tipos_bloques;
-
-ALTER TABLE H_UNIDAD_INTERNA RENAME COLUMN COLUMN1 TO NOMBRE_UNIDAD;
+  -- Procedimiento para modificar la columna torre de la tabla_origen
+  PROCEDURE modificar_torre(p_id IN NUMBER, p_nuevo_valor IN VARCHAR2) IS
+  BEGIN
+    UPDATE tabla_origen SET torre = p_nuevo_valor WHERE id = p_id;
+  END modificar_torre;
+END package_nombre;
+/
+-- Trigger que agrega datos a otra tabla y muestra un mensaje cuando se elimina, agrega o modifica datos
+  CREATE OR REPLACE TRIGGER trigger_nombre
+  AFTER INSERT OR UPDATE OR DELETE ON tabla_origen
+  FOR EACH ROW
+DECLARE
+BEGIN
+  IF INSERTING THEN
+    INSERT INTO tabla_destino (campo1, campo2) VALUES (:new.campo1, :new.campo2);
+    dbms_output.put_line('Se ha agregado un registro a la tabla_origen');
+  ELSIF UPDATING THEN
+    INSERT INTO tabla_destino (campo1, campo2) VALUES (:new.campo1, :new.campo2);
+    dbms_output.put_line('Se ha modificado un registro de la tabla_origen');
+  ELSIF DELETING THEN
+    dbms_output.put_line('Se ha eliminado un registro de la tabla_origen');
+  END IF;
+END trigger_nombre;
